@@ -1,0 +1,3 @@
+proc_data/
+*.ipynb_checkpoints/
+submission.csv
