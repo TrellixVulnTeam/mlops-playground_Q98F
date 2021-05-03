@@ -626,8 +626,8 @@ def str_to_int(x):
 if __name__ == '__main__':
     base_dir = '/opt/ml/processing'
     
-    train_identity = pd.read_csv(f'{base_dir}/input/train_identity.csv')
-    train_transaction = pd.read_csv(f'{base_dir}/input/train_transaction.csv')
+    train_identity = pd.read_csv(f'{base_dir}/training/train_identity.csv')
+    train_transaction = pd.read_csv(f'{base_dir}/training/train_transaction.csv')
     df_train = pd.merge(train_transaction, train_identity, on='TransactionID', how='left')
     
     cat_features = pd.Index(
