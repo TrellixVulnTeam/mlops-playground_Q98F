@@ -1,4 +1,4 @@
-proc_data/
-*.ipynb_checkpoints/
-*.DS_Store
+prc_data
+*ipynb_checkpoints
+*DS_Store
 submission.csv

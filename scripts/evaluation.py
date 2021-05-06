@@ -1,3 +1,4 @@
+
 import json
 import pathlib
 import pickle
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     scores = clf.predict(X_test)
     preds = get_pred(scores)
  
-    eval_dict = {
+    eval_metrics = {
         'eval_metric': {
             'accuracy': accuracy_score(y_test, preds),
             'precision': precision_score(y_test, preds),
@@ -40,9 +41,9 @@ if __name__ == '__main__':
         }
     }
     
-    output_dir = f'{base_dir}/evaluation'
+    output_dir = f'{base_dir}/eval'
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
     
-    output_path = f'{output_dir}/evaluation.json'
+    output_path = f'{output_dir}/eval_metrics.json'
     with open(output_path, 'w') as f:
-        f.write(json.dumps(eval_dict))
+        f.write(json.dumps(eval_metrics))

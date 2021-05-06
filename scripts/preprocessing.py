@@ -1,3 +1,4 @@
+
 import numbers
 import numpy as np
 import pandas as pd
@@ -636,7 +637,7 @@ if __name__ == '__main__':
     num_features = df_train.columns.difference(pd.Index(['TransactionID', 'TransactionDT', 'isFraud']) | cat_features)
     all_features = cat_features | num_features
     
-    int_cat_features =  df_train[cat_features].select_dtypes('number').columns
+    int_cat_features = df_train[cat_features].select_dtypes('number').columns
     df_train[int_cat_features] = df_train[int_cat_features].applymap(str_to_int)
     
     df_train[cat_features] = df_train[cat_features].astype('str')
@@ -647,14 +648,14 @@ if __name__ == '__main__':
     df_X_train, df_X_valid, df_y_train, df_y_valid = train_test_split(
         df_X_train, df_y_train, test_size=0.15, random_state=42, stratify=df_y_train)
     
-    cat_pipeline = make_pipeline(OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=np.nan),
-                                 SimpleImputer(strategy='constant', fill_value=-1))
+    cat_pipeline = make_pipeline(SimpleImputer(strategy='constant', fill_value='<unknown>'), 
+                                 OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1))
     num_pipeline = SimpleImputer(strategy='median')
-    transformer = make_column_transformer((cat_pipeline, cat_features), (num_pipeline, num_features))
+    processor = make_column_transformer((cat_pipeline, cat_features), (num_pipeline, num_features))
 
-    X_train = transformer.fit_transform(df_X_train)
-    X_valid = transformer.transform(df_X_valid)
-    X_test = transformer.transform(df_X_test)
+    X_train = processor.fit_transform(df_X_train)
+    X_valid = processor.transform(df_X_valid)
+    X_test = processor.transform(df_X_test)
     
     dtrain = np.concatenate((df_y_train.values.reshape(-1, 1), X_train), axis=1)
     dvalid = np.concatenate((df_y_valid.values.reshape(-1, 1), X_valid), axis=1)
