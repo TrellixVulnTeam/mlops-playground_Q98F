@@ -9,33 +9,33 @@ from sklearn.metrics import (accuracy_score, precision_score, recall_score, f1_s
                              average_precision_score, roc_auc_score)
 
 
-def get_pred(score, thr=0.5):
+def get_prediction(score, thr=0.5):
     return np.where(score >= thr, 1, 0)
 
 
 if __name__ == '__main__':
     base_dir = '/opt/ml/processing'
     
-    model_path = f'{base_dir}/models/model.tar.gz'
-    with tarfile.open(model_path) as tar:
-        tar.extractall(path='.')
+    model_path = f'{base_dir}/models'
+    with tarfile.open(model_path + '/model.tar.gz') as tar:
+        tar.extractall(path=model_path)
         
-    clf = pickle.load(open('xgboost-model', 'rb'))
+    estimator = pickle.load(open(model_path + '/xgboost-model', 'rb'))
     
     data_path = f'{base_dir}/test/dtest.csv'
     dtest = np.loadtxt(data_path, delimiter=',')
     
     y_test, X_test = dtest[:, 0], dtest[:, 1:]
     X_test = xgb.DMatrix(X_test)
-    scores = clf.predict(X_test)
-    preds = get_pred(scores)
+    scores = estimator.predict(X_test)
+    predictions = get_prediction(scores)
  
     eval_metrics = {
         'eval_metric': {
-            'accuracy': accuracy_score(y_test, preds),
-            'precision': precision_score(y_test, preds),
-            'recall': recall_score(y_test, preds),
-            'f1': f1_score(y_test, preds),
+            'accuracy': accuracy_score(y_test, predictions),
+            'precision': precision_score(y_test, predictions),
+            'recall': recall_score(y_test, predictions),
+            'f1': f1_score(y_test, predictions),
             'auroc': roc_auc_score(y_test, scores),
             'auprc': average_precision_score(y_test, scores)
         }
