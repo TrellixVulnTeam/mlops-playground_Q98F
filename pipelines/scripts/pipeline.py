@@ -2,18 +2,16 @@ import os
 import boto3
 import sagemaker
 from sagemaker.estimator import Estimator
-from sagemaker.inputs import CreateModelInput, TrainingInput, TransformInput
-from sagemaker.model import Model
+from sagemaker.inputs import TrainingInput
 from sagemaker.model_metrics import MetricsSource, ModelMetrics
 from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.sklearn.processing import ScriptProcessor, SKLearnProcessor
-from sagemaker.transformer import Transformer
 from sagemaker.workflow.condition_step import ConditionStep, JsonGet
 from sagemaker.workflow.conditions import ConditionGreaterThanOrEqualTo, ConditionLessThanOrEqualTo
 from sagemaker.workflow.parameters import ParameterInteger, ParameterString
 from sagemaker.workflow.properties import PropertyFile
 from sagemaker.workflow.step_collections import RegisterModel
-from sagemaker.workflow.steps import CreateModelStep, ProcessingStep, TrainingStep, TransformStep
+from sagemaker.workflow.steps import ProcessingStep, TrainingStep
 from sagemaker.workflow.pipeline import Pipeline
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -242,39 +240,6 @@ def get_pipeline(region, base_job_prefix, model_package_group_name, pipeline_nam
         approval_status=model_approval_status
     )
 
-    model = Model(
-        image_uri=image_uri,
-        model_data=step_retrain.properties.ModelArtifacts.S3ModelArtifacts,
-        role=role,
-        sagemaker_session=sagemaker_session
-    )
-
-    step_deploy = CreateModelStep(
-        name='DeployModel',
-        model=model,
-        inputs=CreateModelInput(
-            instance_type='ml.m5.2xlarge',
-            accelerator_type='ml.eia2.medium'
-        )
-    )
-
-    full_transformer = Transformer(
-        model_name=step_deploy.properties.ModelName,
-        instance_count=1,
-        instance_type='ml.m5.2xlarge',
-        output_path=f's3://{bucket}/{base_job_prefix}/pred'
-    )
-
-    step_predict = TransformStep(
-        name='PredictData',
-        transformer=full_transformer,
-        inputs=TransformInput(
-            data=step_repreprocess.properties.ProcessingOutputConfig.Outputs['retest'].S3Output.S3Uri,
-            content_type='text/csv',
-            split_type='Line'
-        )
-    )
-
     target_metric = 'auroc'
     target_value = 0.9
     target_minimize = False
@@ -292,7 +257,7 @@ def get_pipeline(region, base_job_prefix, model_package_group_name, pipeline_nam
     step_check = ConditionStep(
         name='CheckCondition',
         conditions=[condition],
-        if_steps=[step_repreprocess, step_retrain, step_register, step_deploy, step_predict],
+        if_steps=[step_repreprocess, step_retrain, step_register],
         else_steps=[]
     )
 
