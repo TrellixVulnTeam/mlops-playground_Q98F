@@ -1,9 +1,11 @@
-a
+# Sagemaker Pipelines
 
-![Convergence Plot](./images/convergence_plot.svg)
+![Convergence Plot](img/convergence_plot.svg)
 
-![Partial Dependence Plot](./images/partial_dependence_plot.png)
+![Partial Dependence Plot](img/partial_dependence_plot.png)
 
-![ROC Curve Plot](./images/roc_curve.svg)
+![Confusion Matrix](img/conf_mat.svg)
 
-![PR Curve Plot](./images/pr_curve.svg)
+![ROC Curve Plot](img/roc_curve.svg)
+
+![PR Curve Plot](img/pr_curve.svg)

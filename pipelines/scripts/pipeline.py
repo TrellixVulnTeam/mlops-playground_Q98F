@@ -81,7 +81,7 @@ def get_pipeline(region, base_job_prefix, model_package_group_name, pipeline_nam
             ProcessingOutput(source='/opt/ml/processing/valid', output_name='valid'),
             ProcessingOutput(source='/opt/ml/processing/test', output_name='test')
         ],
-        code=os.path.join(BASE_DIR, 'preprocessing.py')
+        code=os.path.join(BASE_DIR, '../../scripts/preprocessing.py')
     )
 
     model_output_uri = f's3://{bucket}/{base_job_prefix}/models'
@@ -165,7 +165,7 @@ def get_pipeline(region, base_job_prefix, model_package_group_name, pipeline_nam
         outputs=[
             ProcessingOutput(source='/opt/ml/processing/eval', output_name='evaluation')
         ],
-        code=os.path.join(BASE_DIR, 'evaluation.py'),
+        code=os.path.join(BASE_DIR, '../../scripts/evaluation.py'),
         property_files=[evaluation]
     )
 
@@ -189,7 +189,7 @@ def get_pipeline(region, base_job_prefix, model_package_group_name, pipeline_nam
             ProcessingOutput(source='/opt/ml/processing/revalid', output_name='revalid'),
             ProcessingOutput(source='/opt/ml/processing/retest', output_name='retest')
         ],
-        code=os.path.join(BASE_DIR, 'repreprocessing.py')
+        code=os.path.join(BASE_DIR, '../../scripts/repreprocessing.py')
     )
 
     full_estimator = Estimator(

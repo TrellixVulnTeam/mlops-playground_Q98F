@@ -1,4 +1,6 @@
-prc_data
-*ipynb_checkpoints
 *DS_Store
+*ipynb_checkpoints
+*.idea
+*__pycache__
+proc_data
 submission.csv
