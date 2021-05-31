@@ -9,3 +9,5 @@
 ![ROC Curve Plot](img/roc_curve.svg)
 
 ![PR Curve Plot](img/pr_curve.svg)
+
+![Pipeline DAG](img/pipeline_dag.png)
