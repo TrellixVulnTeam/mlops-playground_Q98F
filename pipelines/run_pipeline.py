@@ -12,17 +12,14 @@
 # language governing permissions and limitations under the License.
 """A CLI to create or update and run pipelines."""
 from __future__ import absolute_import
-
 import argparse
 import json
 import sys
+from pipelines._utils import convert_struct, get_pipeline_driver
 
-from pipelines._utils import get_pipeline_driver, convert_struct
 
-
-def main():  # pragma: no cover
+def main():
     """The main harness that creates or updates and runs the pipeline.
-
     Creates or updates the pipeline and runs it.
     """
     parser = argparse.ArgumentParser(
@@ -63,7 +60,7 @@ def main():  # pragma: no cover
         "--tags",
         dest="tags",
         default=None,
-        help="""List of dict strings of '[{"Key": "string", "Value": "string"}, ..]'""",
+        help="List of dict strings of '[{'Key': 'string', 'Value': 'string'}, ..]'",
     )
     args = parser.parse_args()
 
@@ -74,7 +71,9 @@ def main():  # pragma: no cover
 
     try:
         pipeline = get_pipeline_driver(args.module_name, args.kwargs)
-        print("###### Creating/updating a SageMaker Pipeline with the following definition:")
+        print(
+            "###### Creating/updating a SageMaker Pipeline with the following definition:"
+        )
         parsed = json.loads(pipeline.definition())
         print(json.dumps(parsed, indent=2, sort_keys=True))
 
@@ -86,15 +85,13 @@ def main():  # pragma: no cover
 
         execution = pipeline.start()
         print(f"\n###### Execution started with PipelineExecutionArn: {execution.arn}")
-
         print("Waiting for the execution to finish...")
         execution.wait()
-        print("\n#####Execution completed. Execution step details:")
 
+        print("\n##### Execution completed. Execution step details:")
         print(execution.list_steps())
-        # Todo print the status?
-    except Exception as e:  # pylint: disable=W0703
-        print(f"Exception: {e}")
+    except Exception as error:  # pylint: disable=W0703
+        print(f"Exception: {error}")
         sys.exit(1)
 
 

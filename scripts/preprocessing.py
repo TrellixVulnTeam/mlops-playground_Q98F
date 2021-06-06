@@ -1,4 +1,4 @@
-
+import argparse
 import numbers
 import numpy as np
 import pandas as pd
@@ -11,34 +11,6 @@ from sklearn.pipeline import make_pipeline
 from sklearn.utils import check_array, is_scalar_nan
 from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.validation import _deprecate_positional_args
-
-
-def is_scalar_nan(x):
-    """Tests if x is NaN.
-    This function is meant to overcome the issue that np.isnan does not allow
-    non-numerical types as input, and that np.nan is not float('nan').
-    Parameters
-    ----------
-    x : any type
-    Returns
-    -------
-    boolean
-    Examples
-    --------
-    >>> is_scalar_nan(np.nan)
-    True
-    >>> is_scalar_nan(float("nan"))
-    True
-    >>> is_scalar_nan(None)
-    False
-    >>> is_scalar_nan("")
-    False
-    >>> is_scalar_nan([np.nan])
-    False
-    """
-    # convert from numpy.bool_ to python bool to ensure that testing
-    # is_scalar_nan(x) is True does not fail.
-    return bool(isinstance(x, numbers.Real) and np.isnan(x))
 
 
 def _unique(values, *, return_inverse=False):
@@ -73,7 +45,7 @@ def _unique(values, *, return_inverse=False):
     # here we clip the nans and remove it from uniques
     if uniques.size and is_scalar_nan(uniques[-1]):
         nan_idx = np.searchsorted(uniques, np.nan)
-        uniques = uniques[:nan_idx + 1]
+        uniques = uniques[: nan_idx + 1]
         if return_inverse:
             inverse[inverse > nan_idx] = nan_idx
 
@@ -84,6 +56,7 @@ def _unique(values, *, return_inverse=False):
 
 class MissingValues(NamedTuple):
     """Data class for missing data information"""
+
     nan: bool
     none: bool
 
@@ -110,8 +83,9 @@ def _extract_missing(values):
     missing_values: MissingValues
         Object with missing value information.
     """
-    missing_values_set = {value for value in values
-                          if value is None or is_scalar_nan(value)}
+    missing_values_set = {
+        value for value in values if value is None or is_scalar_nan(value)
+    }
 
     if not missing_values_set:
         return values, MissingValues(nan=False, none=False)
@@ -133,6 +107,7 @@ def _extract_missing(values):
 
 class _nandict(dict):
     """Dictionary with support for nans."""
+
     def __init__(self, mapping):
         super().__init__(mapping)
         for key, value in mapping.items():
@@ -141,7 +116,7 @@ class _nandict(dict):
                 break
 
     def __missing__(self, key):
-        if hasattr(self, 'nan_value') and is_scalar_nan(key):
+        if hasattr(self, "nan_value") and is_scalar_nan(key):
             return self.nan_value
         raise KeyError(key)
 
@@ -162,10 +137,11 @@ def _unique_python(values, *, return_inverse):
         uniques.extend(missing_values.to_list())
         uniques = np.array(uniques, dtype=values.dtype)
     except TypeError:
-        types = sorted(t.__qualname__
-                       for t in set(type(v) for v in values))
-        raise TypeError("Encoders require their input to be uniformly "
-                        f"strings or numbers. Got {types}")
+        types = sorted(t.__qualname__ for t in set(type(v) for v in values))
+        raise TypeError(
+            "Encoders require their input to be uniformly "
+            f"strings or numbers. Got {types}"
+        )
 
     if return_inverse:
         return uniques, _map_to_integer(values, uniques)
@@ -199,7 +175,7 @@ def _encode(values, *, uniques, check_unknown=True):
     encoded : ndarray
         Encoded values
     """
-    if values.dtype.kind in 'OUS':
+    if values.dtype.kind in "OUS":
         try:
             return _map_to_integer(values, uniques)
         except KeyError as e:
@@ -208,8 +184,9 @@ def _encode(values, *, uniques, check_unknown=True):
         if check_unknown:
             diff = _check_unknown(values, uniques)
             if diff:
-                raise ValueError(f"y contains previously unseen labels: "
-                                 f"{str(diff)}")
+                raise ValueError(
+                    f"y contains previously unseen labels: " f"{str(diff)}"
+                )
         return np.searchsorted(uniques, values)
 
 
@@ -236,7 +213,7 @@ def _check_unknown(values, known_values, return_mask=False):
     """
     valid_mask = None
 
-    if values.dtype.kind in 'OUS':
+    if values.dtype.kind in "OUS":
         values_set = set(values)
         values_set, missing_in_values = _extract_missing(values_set)
 
@@ -248,9 +225,13 @@ def _check_unknown(values, known_values, return_mask=False):
         none_in_diff = missing_in_values.none and not missing_in_uniques.none
 
         def is_valid(value):
-            return (value in uniques_set or
-                    missing_in_uniques.none and value is None or
-                    missing_in_uniques.nan and is_scalar_nan(value))
+            return (
+                value in uniques_set
+                or missing_in_uniques.none
+                and value is None
+                or missing_in_uniques.nan
+                and is_scalar_nan(value)
+            )
 
         if return_mask:
             if diff or nan_in_diff or none_in_diff:
@@ -265,8 +246,7 @@ def _check_unknown(values, known_values, return_mask=False):
             diff.append(np.nan)
     else:
         unique_values = np.unique(values)
-        diff = np.setdiff1d(unique_values, known_values,
-                            assume_unique=True)
+        diff = np.setdiff1d(unique_values, known_values, assume_unique=True)
         if return_mask:
             if diff.size:
                 valid_mask = np.in1d(values, known_values)
@@ -308,14 +288,11 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
           of pandas DataFrame columns, as otherwise information is lost
           and cannot be used, eg for the `categories_` attribute.
         """
-        if not (hasattr(X, 'iloc') and getattr(X, 'ndim', 0) == 2):
+        if not (hasattr(X, "iloc") and getattr(X, "ndim", 0) == 2):
             # if not a dataframe, do normal check_array validation
-            X_temp = check_array(X, dtype=None,
-                                 force_all_finite=force_all_finite)
-            if (not hasattr(X, 'dtype')
-                    and np.issubdtype(X_temp.dtype, np.str_)):
-                X = check_array(X, dtype=object,
-                                force_all_finite=force_all_finite)
+            X_temp = check_array(X, dtype=None, force_all_finite=force_all_finite)
+            if not hasattr(X, "dtype") and np.issubdtype(X_temp.dtype, np.str_):
+                X = check_array(X, dtype=object, force_all_finite=force_all_finite)
             else:
                 X = X_temp
             needs_validation = False
@@ -329,58 +306,67 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
 
         for i in range(n_features):
             Xi = self._get_feature(X, feature_idx=i)
-            Xi = check_array(Xi, ensure_2d=False, dtype=None,
-                             force_all_finite=needs_validation)
+            Xi = check_array(
+                Xi, ensure_2d=False, dtype=None, force_all_finite=needs_validation
+            )
             X_columns.append(Xi)
 
         return X_columns, n_samples, n_features
 
     def _get_feature(self, X, feature_idx):
-        if hasattr(X, 'iloc'):
+        if hasattr(X, "iloc"):
             # pandas dataframes
             return X.iloc[:, feature_idx]
         # numpy arrays, sparse arrays
         return X[:, feature_idx]
 
-    def _fit(self, X, handle_unknown='error', force_all_finite=True):
+    def _fit(self, X, handle_unknown="error", force_all_finite=True):
         X_list, n_samples, n_features = self._check_X(
-            X, force_all_finite=force_all_finite)
+            X, force_all_finite=force_all_finite
+        )
 
-        if self.categories != 'auto':
+        if self.categories != "auto":
             if len(self.categories) != n_features:
-                raise ValueError("Shape mismatch: if categories is an array,"
-                                 " it has to be of shape (n_features,).")
+                raise ValueError(
+                    "Shape mismatch: if categories is an array,"
+                    " it has to be of shape (n_features,)."
+                )
 
         self.categories_ = []
 
         for i in range(n_features):
             Xi = X_list[i]
-            if self.categories == 'auto':
+            if self.categories == "auto":
                 cats = _unique(Xi)
             else:
                 cats = np.array(self.categories[i], dtype=Xi.dtype)
-                if Xi.dtype.kind not in 'OUS':
+                if Xi.dtype.kind not in "OUS":
                     sorted_cats = np.sort(cats)
-                    error_msg = ("Unsorted categories are not "
-                                 "supported for numerical categories")
+                    error_msg = (
+                        "Unsorted categories are not "
+                        "supported for numerical categories"
+                    )
                     # if there are nans, nan should be the last element
                     stop_idx = -1 if np.isnan(sorted_cats[-1]) else None
-                    if (np.any(sorted_cats[:stop_idx] != cats[:stop_idx]) or
-                        (np.isnan(sorted_cats[-1]) and
-                         not np.isnan(sorted_cats[-1]))):
+                    if np.any(sorted_cats[:stop_idx] != cats[:stop_idx]) or (
+                        np.isnan(sorted_cats[-1]) and not np.isnan(sorted_cats[-1])
+                    ):
                         raise ValueError(error_msg)
 
-                if handle_unknown == 'error':
+                if handle_unknown == "error":
                     diff = _check_unknown(Xi, cats)
                     if diff:
-                        msg = ("Found unknown categories {0} in column {1}"
-                               " during fit".format(diff, i))
+                        msg = (
+                            "Found unknown categories {0} in column {1}"
+                            " during fit".format(diff, i)
+                        )
                         raise ValueError(msg)
             self.categories_.append(cats)
 
-    def _transform(self, X, handle_unknown='error', force_all_finite=True):
+    def _transform(self, X, handle_unknown="error", force_all_finite=True):
         X_list, n_samples, n_features = self._check_X(
-            X, force_all_finite=force_all_finite)
+            X, force_all_finite=force_all_finite
+        )
 
         X_int = np.zeros((n_samples, n_features), dtype=int)
         X_mask = np.ones((n_samples, n_features), dtype=bool)
@@ -389,19 +375,24 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
             raise ValueError(
                 "The number of features in X is different to the number of "
                 "features of the fitted data. The fitted data had {} features "
-                "and the X has {} features."
-                .format(len(self.categories_,), n_features)
+                "and the X has {} features.".format(
+                    len(
+                        self.categories_,
+                    ),
+                    n_features,
+                )
             )
 
         for i in range(n_features):
             Xi = X_list[i]
-            diff, valid_mask = _check_unknown(Xi, self.categories_[i],
-                                              return_mask=True)
+            diff, valid_mask = _check_unknown(Xi, self.categories_[i], return_mask=True)
 
             if not np.all(valid_mask):
-                if handle_unknown == 'error':
-                    msg = ("Found unknown categories {0} in column {1}"
-                           " during transform".format(diff, i))
+                if handle_unknown == "error":
+                    msg = (
+                        "Found unknown categories {0} in column {1}"
+                        " during transform".format(diff, i)
+                    )
                     raise ValueError(msg)
                 else:
                     # Set the problematic rows to an acceptable value and
@@ -410,28 +401,28 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
                     X_mask[:, i] = valid_mask
                     # cast Xi into the largest string type necessary
                     # to handle different lengths of numpy strings
-                    if (self.categories_[i].dtype.kind in ('U', 'S')
-                            and self.categories_[i].itemsize > Xi.itemsize):
+                    if (
+                        self.categories_[i].dtype.kind in ("U", "S")
+                        and self.categories_[i].itemsize > Xi.itemsize
+                    ):
                         Xi = Xi.astype(self.categories_[i].dtype)
-                    elif (self.categories_[i].dtype.kind == 'O' and
-                            Xi.dtype.kind == 'U'):
+                    elif self.categories_[i].dtype.kind == "O" and Xi.dtype.kind == "U":
                         # categories are objects and Xi are numpy strings.
                         # Cast Xi to an object dtype to prevent truncation
                         # when setting invalid values.
-                        Xi = Xi.astype('O')
+                        Xi = Xi.astype("O")
                     else:
                         Xi = Xi.copy()
 
                     Xi[~valid_mask] = self.categories_[i][0]
             # We use check_unknown=False, since _check_unknown was
             # already called above.
-            X_int[:, i] = _encode(Xi, uniques=self.categories_[i],
-                                  check_unknown=False)
+            X_int[:, i] = _encode(Xi, uniques=self.categories_[i], check_unknown=False)
 
         return X_int, X_mask
 
     def _more_tags(self):
-        return {'X_types': ['categorical']}
+        return {"X_types": ["categorical"]}
 
 
 class OrdinalEncoder(_BaseEncoder):
@@ -499,8 +490,14 @@ class OrdinalEncoder(_BaseEncoder):
     """
 
     @_deprecate_positional_args
-    def __init__(self, *, categories='auto', dtype=np.float64,
-                 handle_unknown='error', unknown_value=None):
+    def __init__(
+        self,
+        *,
+        categories="auto",
+        dtype=np.float64,
+        handle_unknown="error",
+        unknown_value=None,
+    ):
         self.categories = categories
         self.dtype = dtype
         self.handle_unknown = handle_unknown
@@ -520,33 +517,39 @@ class OrdinalEncoder(_BaseEncoder):
         -------
         self
         """
-        if self.handle_unknown == 'use_encoded_value':
+        if self.handle_unknown == "use_encoded_value":
             if is_scalar_nan(self.unknown_value):
-                if np.dtype(self.dtype).kind != 'f':
+                if np.dtype(self.dtype).kind != "f":
                     raise ValueError(
                         f"When unknown_value is np.nan, the dtype "
                         "parameter should be "
                         f"a float dtype. Got {self.dtype}."
                     )
             elif not isinstance(self.unknown_value, numbers.Integral):
-                raise TypeError(f"unknown_value should be an integer or "
-                                f"np.nan when "
-                                f"handle_unknown is 'use_encoded_value', "
-                                f"got {self.unknown_value}.")
+                raise TypeError(
+                    f"unknown_value should be an integer or "
+                    f"np.nan when "
+                    f"handle_unknown is 'use_encoded_value', "
+                    f"got {self.unknown_value}."
+                )
         elif self.unknown_value is not None:
-            raise TypeError(f"unknown_value should only be set when "
-                            f"handle_unknown is 'use_encoded_value', "
-                            f"got {self.unknown_value}.")
+            raise TypeError(
+                f"unknown_value should only be set when "
+                f"handle_unknown is 'use_encoded_value', "
+                f"got {self.unknown_value}."
+            )
 
         self._fit(X)
 
-        if self.handle_unknown == 'use_encoded_value':
+        if self.handle_unknown == "use_encoded_value":
             for feature_cats in self.categories_:
                 if 0 <= self.unknown_value < len(feature_cats):
-                    raise ValueError(f"The used value for unknown_value "
-                                     f"{self.unknown_value} is one of the "
-                                     f"values already used for encoding the "
-                                     f"seen categories.")
+                    raise ValueError(
+                        f"The used value for unknown_value "
+                        f"{self.unknown_value} is one of the "
+                        f"values already used for encoding the "
+                        f"seen categories."
+                    )
 
         return self
 
@@ -566,7 +569,7 @@ class OrdinalEncoder(_BaseEncoder):
         X_trans = X_int.astype(self.dtype, copy=False)
 
         # create separate category for unknown values
-        if self.handle_unknown == 'use_encoded_value':
+        if self.handle_unknown == "use_encoded_value":
             X_trans[~X_mask] = self.unknown_value
         return X_trans
 
@@ -583,14 +586,16 @@ class OrdinalEncoder(_BaseEncoder):
             Inverse transformed array.
         """
         check_is_fitted(self)
-        X = check_array(X, accept_sparse='csr')
+        X = check_array(X, accept_sparse="csr")
 
         n_samples, _ = X.shape
         n_features = len(self.categories_)
 
         # validate shape of passed X
-        msg = ("Shape of the passed X data is not correct. Expected {0} "
-               "columns, got {1}.")
+        msg = (
+            "Shape of the passed X data is not correct. Expected {0} "
+            "columns, got {1}."
+        )
         if X.shape[1] != n_features:
             raise ValueError(msg.format(n_features, X.shape[1]))
 
@@ -601,11 +606,10 @@ class OrdinalEncoder(_BaseEncoder):
         found_unknown = {}
 
         for i in range(n_features):
-            labels = X[:, i].astype('int64', copy=False)
-            if self.handle_unknown == 'use_encoded_value':
+            labels = X[:, i].astype("int64", copy=False)
+            if self.handle_unknown == "use_encoded_value":
                 unknown_labels = labels == self.unknown_value
-                X_tr[:, i] = self.categories_[i][np.where(
-                    unknown_labels, 0, labels)]
+                X_tr[:, i] = self.categories_[i][np.where(unknown_labels, 0, labels)]
                 found_unknown[i] = unknown_labels
             else:
                 X_tr[:, i] = self.categories_[i][labels]
@@ -620,47 +624,83 @@ class OrdinalEncoder(_BaseEncoder):
         return X_tr
 
 
-def str_to_int(x):
-    return x if pd.isnull(x) else str(int(x))
+def str_to_int(x_val):
+    return x_val if pd.isnull(x_val) else str(int(x_val))
 
 
-if __name__ == '__main__':
-    base_dir = '/opt/ml/processing'
-    
-    train_identity = pd.read_csv(f'{base_dir}/training/train_identity.csv')
-    train_transaction = pd.read_csv(f'{base_dir}/training/train_transaction.csv')
-    df_train = pd.merge(train_transaction, train_identity, on='TransactionID', how='left')
-    
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--base_dir", default="/opt/ml/processing", type=str)
+    parser.add_argument("--valid_size", default=0.25, type=float)
+    parser.add_argument("--test_size", default=0.25, type=float)
+
+    args = parser.parse_args()
+    base_dir = args.base_dir
+    valid_size = args.valid_size
+    test_size = args.test_size
+
+    train_identity = pd.read_csv(f"{base_dir}/training/train_identity.csv")
+    train_transaction = pd.read_csv(f"{base_dir}/training/train_transaction.csv")
+    df_train = pd.merge(
+        train_transaction, train_identity, on="TransactionID", how="left"
+    )
+
     cat_features = pd.Index(
-        ['ProductCD', 'addr1', 'addr2', 'P_emaildomain', 'R_emaildomain', 'DeviceType', 'DeviceInfo'] + [
-            f'card{i}' for i in range(1, 7)] + [f'M{i}' for i in range(1, 10)] + [f'id_{i}' for i in range(12, 39)])
-    num_features = df_train.columns.difference(pd.Index(['TransactionID', 'TransactionDT', 'isFraud']) | cat_features)
+        [
+            "ProductCD",
+            "addr1",
+            "addr2",
+            "P_emaildomain",
+            "R_emaildomain",
+            "DeviceType",
+            "DeviceInfo",
+        ]
+        + [f"card{i}" for i in range(1, 7)]
+        + [f"M{i}" for i in range(1, 10)]
+        + [f"id_{i}" for i in range(12, 39)]
+    )
+    num_features = df_train.columns.difference(
+        pd.Index(["TransactionID", "TransactionDT", "isFraud"]) | cat_features
+    )
     all_features = cat_features | num_features
-    
-    int_cat_features = df_train[cat_features].select_dtypes('number').columns
+
+    int_cat_features = df_train[cat_features].select_dtypes("number").columns
     df_train[int_cat_features] = df_train[int_cat_features].applymap(str_to_int)
-    
-    df_train[cat_features] = df_train[cat_features].astype('str')
+    df_train[cat_features] = df_train[cat_features].astype("str")
 
     df_X_train, df_X_test, df_y_train, df_y_test = train_test_split(
-        df_train[all_features], df_train['isFraud'], test_size=0.1, random_state=42, stratify=df_train['isFraud'])
+        df_train[all_features],
+        df_train["isFraud"],
+        test_size=test_size,
+        random_state=42,
+        stratify=df_train["isFraud"],
+    )
 
     df_X_train, df_X_valid, df_y_train, df_y_valid = train_test_split(
-        df_X_train, df_y_train, test_size=0.15, random_state=42, stratify=df_y_train)
-    
-    cat_pipeline = make_pipeline(SimpleImputer(strategy='constant', fill_value='<unknown>'), 
-                                 OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1))
-    num_pipeline = SimpleImputer(strategy='median')
-    processor = make_column_transformer((cat_pipeline, cat_features), (num_pipeline, num_features))
+        df_X_train,
+        df_y_train,
+        test_size=valid_size / (1.0 - test_size),
+        random_state=42,
+        stratify=df_y_train,
+    )
+
+    cat_pipeline = make_pipeline(
+        SimpleImputer(strategy="constant", fill_value="<unknown>"),
+        OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1),
+    )
+    num_pipeline = SimpleImputer(strategy="median")
+    processor = make_column_transformer(
+        (cat_pipeline, cat_features), (num_pipeline, num_features)
+    )
 
     X_train = processor.fit_transform(df_X_train)
     X_valid = processor.transform(df_X_valid)
     X_test = processor.transform(df_X_test)
-    
-    dtrain = np.concatenate((df_y_train.values.reshape(-1, 1), X_train), axis=1)
-    dvalid = np.concatenate((df_y_valid.values.reshape(-1, 1), X_valid), axis=1)
-    dtest = np.concatenate((df_y_test.values.reshape(-1, 1), X_test), axis=1)
-    
-    np.savetxt(f'{base_dir}/train/dtrain.csv', dtrain, delimiter=',', fmt='%i')
-    np.savetxt(f'{base_dir}/valid/dvalid.csv', dvalid, delimiter=',', fmt='%i')
-    np.savetxt(f'{base_dir}/test/dtest.csv', dtest, delimiter=',', fmt='%i')
+
+    arr_train = np.concatenate((df_y_train.values.reshape(-1, 1), X_train), axis=1)
+    arr_valid = np.concatenate((df_y_valid.values.reshape(-1, 1), X_valid), axis=1)
+    arr_test = np.concatenate((df_y_test.values.reshape(-1, 1), X_test), axis=1)
+
+    np.savetxt(f"{base_dir}/train/arr_train.csv", arr_train, delimiter=",", fmt="%i")
+    np.savetxt(f"{base_dir}/valid/arr_valid.csv", arr_valid, delimiter=",", fmt="%i")
+    np.savetxt(f"{base_dir}/test/arr_test.csv", arr_test, delimiter=",", fmt="%i")

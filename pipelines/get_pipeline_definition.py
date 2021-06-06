@@ -12,19 +12,18 @@
 # language governing permissions and limitations under the License.
 """A CLI to get pipeline definitions from pipeline modules."""
 from __future__ import absolute_import
-
 import argparse
 import sys
-
 from pipelines._utils import get_pipeline_driver
 
 
-def main():  # pragma: no cover
+def main():
     """The main harness that gets the pipeline definition JSON.
-
     Prints the json to stdout or saves to file.
     """
-    parser = argparse.ArgumentParser("Gets the pipeline definition for the pipeline script.")
+    parser = argparse.ArgumentParser(
+        "Gets the pipeline definition for the pipeline script."
+    )
 
     parser.add_argument(
         "-n",
@@ -58,12 +57,12 @@ def main():  # pragma: no cover
         pipeline = get_pipeline_driver(args.module_name, args.kwargs)
         content = pipeline.definition()
         if args.file_name:
-            with open(args.file_name, "w") as f:
-                f.write(content)
+            with open(args.file_name, "w") as file:
+                file.write(content)
         else:
             print(content)
-    except Exception as e:  # pylint: disable=W0703
-        print(f"Exception: {e}")
+    except Exception as error:  # pylint: disable=W0703
+        print(f"Exception: {error}")
         sys.exit(1)
 
 
