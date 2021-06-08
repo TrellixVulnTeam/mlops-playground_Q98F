@@ -624,8 +624,8 @@ class OrdinalEncoder(_BaseEncoder):
         return X_tr
 
 
-def str_to_int(x_val):
-    return x_val if pd.isnull(x_val) else str(int(x_val))
+def str_to_int(x):
+    return x if pd.isnull(x) else str(int(x))
 
 
 if __name__ == "__main__":
