@@ -17,6 +17,17 @@ def get_prediction(score, threshold=0.5):
     return np.where(score >= threshold, 1, 0)
 
 
+def get_threshold(ground_truths, score, recall=None):
+    if recall is None:
+        return score.mean()
+    else:
+        indices = np.argsort(-1.0 * score)
+        sorted_ground_truths = ground_truths.values.ravel()[indices]
+        target = int(recall * ground_truths.values.sum())
+        index = np.where(np.cumsum(sorted_ground_truths) == target)[0][0]
+        return score[indices[index]]
+
+
 def get_histogram(score, bins=30):
     hist, edges = np.histogram(score, bins=bins)
     percent = list(map(lambda x: x, hist / hist.sum()))
@@ -47,13 +58,14 @@ def plot_confusion_matrix(conf_mat, model_name=None, file_name=None):
     )
 
     mapper = LinearColorMapper(
-        palette="Greys256", low=conf_mat.min(), high=conf_mat.max()
+        palette="Greys256", low=conf_mat.max(), high=conf_mat.min()
     )
     source = ColumnDataSource(
         dict(
-            true_class=[0, 1, 0, 1],
-            predicted_class=[0, 0, 1, 1],
+            true_class=[0, 0, 1, 1],
+            predicted_class=[0, 1, 0, 1],
             n_samples=conf_mat.flatten(),
+            inv_n_samples=-1 * conf_mat.flatten(),
         )
     )
 
@@ -76,7 +88,7 @@ def plot_confusion_matrix(conf_mat, model_name=None, file_name=None):
             "black"
             if (conf_mat[x_value, y_value] - conf_mat.min())
             / (conf_mat.max() - conf_mat.min())
-            > 0.5
+            <= 0.5
             else "white"
         )
 
@@ -109,10 +121,12 @@ def plot_confusion_matrix(conf_mat, model_name=None, file_name=None):
 
 
 def plot_histogram_by_class(
-    score_false, score_true, bins=30, model_name=None, file_name=None
+    score_false, score_true, bins=30, class_name=None, model_name=None, file_name=None
 ):
     if not isinstance(bins, Iterable):
         bins = [bins, bins]
+    if class_name is None or not isinstance(class_name, Iterable):
+        class_name = ["False", "True"]
     if model_name is None:
         model_name = ""
     else:
@@ -121,8 +135,8 @@ def plot_histogram_by_class(
     p = figure(
         plot_width=600,
         plot_height=400,
-        title=f"{model_name}Reconstruction Error Distribution",
-        x_axis_label="Reconstruction Error",
+        title=f"{model_name}Prediction Score Histogram by Class",
+        x_axis_label="Prediction Score",
         y_axis_label="# Samples",
     )
 
@@ -137,7 +151,7 @@ def plot_histogram_by_class(
         line_color=None,
         hover_fill_alpha=1.0,
         hover_fill_color="tan",
-        legend_label="Normal Signals",
+        legend_label=class_name[0],
         source=source,
     )
 
@@ -152,7 +166,7 @@ def plot_histogram_by_class(
         line_color=None,
         hover_fill_alpha=1.0,
         hover_fill_color="tan",
-        legend_label="Abnormal Signals",
+        legend_label=class_name[1],
         source=source,
     )
 
