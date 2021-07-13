@@ -14,8 +14,8 @@ from sklearn.metrics import (
 )
 
 
-def get_prediction(score, thr=0.5):
-    return np.where(score >= thr, 1, 0)
+def get_prediction(score, threshold=0.5):
+    return np.where(score >= threshold, 1, 0)
 
 
 if __name__ == "__main__":

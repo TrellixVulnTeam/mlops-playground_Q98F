@@ -10,11 +10,13 @@
 
 ## SageMaker Estimator and HyperparameterTuner
 ### Data Splitting and Preprocessing
-I preprocessed categorical variables with missing value imputation and ordinal encoding. In the case of *XGBoost*, there is no logic to separately process categorical variables, so I quantified them with the *Target Encoding* of `category_encoders`. I simply preprocessed numerical variables with missing value imputation.
+I preprocessed categorical variables with missing value imputation and ordinal encoding. In the case of *[XGBoost](https://arxiv.org/pdf/1603.02754.pdf)*, there is no logic to separately process categorical variables, so I quantified them with the *[Target Encoding](https://dl.acm.org/doi/10.1145/507533.507538)* of `category_encoders`. I simply preprocessed numerical variables with missing value imputation.
   
 ### Hyperparameter Tuning
-First, I defined an **Estimator** with SageMaker's **XGBoost framework**. Then, I efficiently obtained the optimal hyperparameter values by fitting a **HyperparameterTuner**. Below are the convergence plot, and the exploration results for each parameter.
-* Reference: [Analyze Results of a Hyperparameter Tuning Job](https://github.com/aws/amazon-sagemaker-examples/blob/master/hyperparameter_tuning/analyze_results/HPO_Analyze_TuningJob_Results.ipynb)
+First, I defined an **Estimator** with SageMaker's **XGBoost framework**. Then, I efficiently obtained the optimal hyperparameter values by fitting a **HyperparameterTuner** that automatically performs a *Bayesian search*. Below are the convergence plot, and the exploration results for each parameter.
+* Reference:  
+  [How Hyperparameter Tuning Works](https://docs.aws.amazon.com/sagemaker/latest/dg/automatic-model-tuning-how-it-works.html)  
+  [Analyze Results of a Hyperparameter Tuning Job](https://github.com/aws/amazon-sagemaker-examples/blob/master/hyperparameter_tuning/analyze_results/HPO_Analyze_TuningJob_Results.ipynb)
 
 ![Convergence Plot](img/convergence_plot.svg)
 
@@ -37,5 +39,8 @@ After defining the **Transformer** of the optimal **Estimator**, I obtained the 
 Finally, after retraining the model by combining the training set and the test set, I predicted the unlabeled dataset and submitted the scores. (I got AUROC 90.63%)
 
 ## SageMaker Pipelines
+
+* [Prebuilt Amazon SageMaker Docker Images for Scikit-learn and Spark ML](https://docs.aws.amazon.com/sagemaker/latest/dg/pre-built-docker-containers-scikit-learn-spark.html)
+* [Extend a Prebuilt Container](https://docs.aws.amazon.com/sagemaker/latest/dg/prebuilt-containers-extend.html)
 
 ![Pipeline DAG](img/pipeline_dag.png)
