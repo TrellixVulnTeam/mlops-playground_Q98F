@@ -10,7 +10,7 @@
 
 ## SageMaker Estimator and HyperparameterTuner
 ### Data Splitting and Preprocessing
-I preprocessed the features in appropriate ways. In particular, in the case of *[XGBoost](https://arxiv.org/pdf/1603.02754.pdf)*, there is no logic to separately process categorical variables, so I quantified them with *[Target Encoding](https://dl.acm.org/doi/10.1145/507533.507538)* of `category_encoders`.
+I preprocessed the features in appropriate ways. In particular, in the case of *[XGBoost](https://arxiv.org/pdf/1603.02754.pdf)*, there is no logic to deal with categorical features separately, so I quantified them with *[Target Encoding](https://dl.acm.org/doi/10.1145/507533.507538)* of `category_encoders`.
   
 ### Hyperparameter Tuning
 First, I defined an **Estimator** with SageMaker's **XGBoost framework**. Then, I efficiently obtained the optimal hyperparameter values by fitting a **HyperparameterTuner** that automatically performs a *Bayesian search*. Below are the convergence plot, and the exploration results for each parameter.
