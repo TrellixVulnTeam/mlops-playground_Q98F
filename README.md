@@ -42,18 +42,18 @@ Finally, after retraining the model by combining the training set and the test s
 * I created a custom image to use `scikit-learn` version 0.24 and `category_encoders` library. To build the image with the pre-made `Dockerfile` and push it to Amazon ECR, you need to run the shell script named `run.sh`. As a result, instead of **SKLearnProcessor** with framework version 0.23, you can run a custom image-based **ScriptProcessor** with the required libraries.
 * a) You can run a **TrainStep** to fit the **Estimator** with default hyperparameter values. In this case, refitting is performed by merging up the test set, and prediction scores are calculated. b) Otherwise, it is possible to execute a **TunerStep** to fit the **HyperparameterTuner**. In this case, prediction scores are calculated using the optimal model obtained in the tuning process without refitting.  
     
-|Step|Base Job Class|Description|
-|:------:|:---:|:---:|
-|**ProcessingStep**|~~SKLearnProcessor~~ **ScriptProcessor**|Data splitting and preprocessing|
-|**TrainingStep**|**Estimator**|A *XGBoost* **Estimator** fitting|
-|**TunerStep**|**HyperparameterTuner**|Hyperparameter tuning|
-|**ProcessingStep**|**ScriptProcessor**|The fitted **Estimator** evaluation saved in a *JSON* **PropertyFile**|
-|**ConditionStep**| |A target metric checking to conditionally perform subsequent steps|
-|**ProcessingStep**|~~SKLearnProcessor~~ **ScriptProcessor**|Data repreprocessing|
-|**TrainingStep**|**Estimator**|A *XGBoost* **Estimator** refitting|
-|**RegisterModel**| |Model packing and registration in a *ModelPackageGroup* with **ModelMetrics**|
-|**CreateModel**| |Model deployment|
-|**TransformStep**|**Transformer**|Batch transformation|
+|Name|Step|Base Job Class|Description|
+|:---:|:---:|:---:|:---:|
+|PreprocessData|**ProcessingStep**|~~SKLearnProcessor~~ **ScriptProcessor**|Data splitting and preprocessing|
+|TrainModel|**TrainingStep**|**Estimator**|A *XGBoost* **Estimator** fitting|
+|TuneHyperparameters|**TunerStep**|**HyperparameterTuner**|Hyperparameter tuning|
+|EvaluateModel|**ProcessingStep**|**ScriptProcessor**|The fitted **Estimator** evaluation saved in a *JSON* **PropertyFile**|
+|CheckCondition|**ConditionStep**| |A target metric checking to conditionally perform subsequent steps|
+|Re-preprocessData|**ProcessingStep**|~~SKLearnProcessor~~ **ScriptProcessor**|Data repreprocessing|
+|Re-trainModel|**TrainingStep**|**Estimator**|A *XGBoost* **Estimator** refitting|
+|RegisterModel|**RegisterModel**| |Model packing and registration in a *ModelPackageGroup* with **ModelMetrics**|
+|DeployModel|**CreateModel**| |Model deployment|
+|PredictData|**TransformStep**|**Transformer**|Batch transformation|
 
 ![Pipeline DAG](img/pipeline_dag.png)
 
