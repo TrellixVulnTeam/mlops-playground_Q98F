@@ -10,10 +10,10 @@
 
 ## SageMaker Estimator and HyperparameterTuner
 ### Data Splitting and Preprocessing
-I preprocessed the features in appropriate ways. In particular, in the case of *[XGBoost](https://arxiv.org/pdf/1603.02754.pdf)*, there is no logic to deal with categorical features separately, so I quantified them with *[Target Encoding](https://dl.acm.org/doi/10.1145/507533.507538)* of `category_encoders`.
+I preprocessed the features in appropriate ways. In particular, in the case of *[XGBoost](https://arxiv.org/pdf/1603.02754.pdf)*, there is no logic to deal with categorical features properly, so I quantified them with *[Target Encoding](https://dl.acm.org/doi/10.1145/507533.507538)* of `category_encoders`.
   
 ### Hyperparameter Tuning
-First, I defined an **Estimator** with SageMaker's **XGBoost framework**. Then, I efficiently obtained the optimal hyperparameter values by fitting a **HyperparameterTuner** that automatically performs a *Bayesian search*. Below are the convergence plot, and the exploration results for each parameter.
+First, I defined an **Estimator** with SageMaker's **XGBoost framework**. Then, I efficiently obtained the optimal hyperparameter values by fitting a **HyperparameterTuner** that automatically launches a *Bayesian search*. Below are the convergence plot, and the exploration results for each parameter.
 * References:  
   [How Hyperparameter Tuning Works](https://docs.aws.amazon.com/sagemaker/latest/dg/automatic-model-tuning-how-it-works.html)  
   [Analyze Results of a Hyperparameter Tuning Job](https://github.com/aws/amazon-sagemaker-examples/blob/master/hyperparameter_tuning/analyze_results/HPO_Analyze_TuningJob_Results.ipynb)
@@ -36,11 +36,11 @@ After defining the **Transformer** of the optimal **Estimator**, I obtained the 
 ![PR Curve Plot](img/pr_curve.svg)
 
 ### Model Retraining
-Finally, after retraining the model by combining the training set and the test set, I predicted the unlabeled dataset and submitted the scores. (I got AUROC 90.63%)
+Finally, after retraining the model by combining the training set and the test set, I predicted the unlabeled dataset and submitted the scores to Kaggle. (I got AUROC 90.63%)
 
 ## SageMaker Pipelines
 * I created a custom image to use `scikit-learn` version 0.24 and `category_encoders` library. To build the image with the pre-made `Dockerfile` and push it to Amazon ECR, you need to run the shell script named `run.sh`. As a result, instead of **SKLearnProcessor** with framework version 0.23, you can run a custom image-based **ScriptProcessor** with the required libraries.
-* a) You can run a **TrainStep** to fit the **Estimator** with default hyperparameter values. In this case, refitting is performed by merging up the test set, and prediction scores are calculated. b) Otherwise, it is possible to execute a **TunerStep** to fit the **HyperparameterTuner**. In this case, prediction scores are calculated using the optimal model obtained in the tuning process without refitting.  
+* a) You can run a **TrainStep** to fit the **Estimator** with default hyperparameter values. In this case, the model is refitted by merging up to the test set, and prediction scores are calculated. b) Otherwise, it is possible to execute a **TunerStep** to fit the **HyperparameterTuner**. In this case, prediction scores are calculated using the optimal model obtained in the tuning process without refitting.  
     
 |Name|Step|Base Job Class|Description|
 |:---:|:---:|:---:|:---:|
