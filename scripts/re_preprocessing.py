@@ -69,7 +69,7 @@ if __name__ == "__main__":
     cat_pipeline = make_pipeline(
         SimpleImputer(strategy="constant", fill_value="<unknown>"),
         OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1),
-        TargetEncoder(min_samples_leaf=1, smoothing=1.0),
+        TargetEncoder(drop_invariant=True, min_samples_leaf=1, smoothing=1.0),
     )
     num_pipeline = SimpleImputer(strategy="median")
     processor = make_column_transformer(

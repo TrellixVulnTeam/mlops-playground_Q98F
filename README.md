@@ -40,6 +40,7 @@ Finally, after retraining the model by combining the training set and the test s
 
 ## SageMaker Pipelines
 * I created a custom image to use `scikit-learn` version 0.24 and `category_encoders` library. To build the image with the pre-made `Dockerfile` and push it to Amazon ECR, you need to run the shell script named `run.sh`. As a result, instead of **SKLearnProcessor** with framework version 0.23, you can run a custom image-based **ScriptProcessor** with the required libraries.
+* This is a special case where the model is trained every time a batch transform is performed.
 * a) You can run a **TrainStep** to fit the **Estimator** with default hyperparameter values. In this case, the model is refitted by merging up to the test set, and prediction scores are calculated. b) Otherwise, it is possible to execute a **TunerStep** to fit the **HyperparameterTuner**. In this case, prediction scores are calculated using the optimal model obtained in the tuning process without refitting.  
     
 |Name|Step|Base Job Class|Description|
