@@ -91,3 +91,4 @@ if __name__ == "__main__":
     np.savetxt(f"{base_dir}/re_train/arr_train.csv", arr_train, delimiter=",", fmt="%i")
     np.savetxt(f"{base_dir}/re_valid/arr_valid.csv", arr_valid, delimiter=",", fmt="%i")
     np.savetxt(f"{base_dir}/re_test/arr_test.csv", arr_test, delimiter=",", fmt="%i")
+
