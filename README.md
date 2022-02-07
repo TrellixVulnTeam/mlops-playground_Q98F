@@ -20,7 +20,7 @@ First, **Estimator** was defined as SageMaker's **XGBoost framework**. The optim
 ![Partial Dependence Plot](img/partial_dependence_plot.png)
 
 ### Model Evaluation
-After defining the **Transformer** of the optimal **Estimator**, the predicted values were obtained in batches through **Batch Transform**. By comparing them to labels, prediction performance can be measured, which is the confusion matrix, ROC curve, and Precision - Recall curve plotted below.
+After defining the **Transformer** of the optimal **Estimator**, the predicted values were obtained in batches through **Batch Transform**. By comparing them to labels, predictive performance can be measured, which is the confusion matrix, ROC curve, and Precision - Recall curve plotted below.
   
 | Accuracy | Precision | Recall |   F1   | AUROC  | AUPRC  |    
 |:--------:|:---------:|:------:|:------:|:------:|:------:|
@@ -40,33 +40,42 @@ Finally, after retraining the model by combining the training and test sets, unl
 ![Global Shapley Values](img/global_shap_values.svg)
 
 ## SageMaker Pipelines
-* I created a custom image to use `scikit-learn` version 0.24 and `category_encoders` library. To build the image with the pre-made `Dockerfile` and push it to Amazon ECR, you need to run the shell script named `run.sh`. As a result, instead of **SKLearnProcessor** with framework version 0.23, you can run a custom image-based **ScriptProcessor** with the required libraries.
-* This is a special case where the model is trained every time a batch transform is performed.
-* a) You can run a **TrainStep** to fit the **Estimator** with default hyperparameter values. In this case, the model is refitted by merging up to the test set, and prediction scores are calculated. b) Otherwise, it is possible to execute a **TunerStep** to fit the **HyperparameterTuner**. In this case, prediction scores are calculated using the optimal model obtained in the tuning process without refitting.  
-    
-|Name|Step|Base Job Class|Description|
-|:---:|:---:|:---:|:---:|
-|PreprocessData|**ProcessingStep**|~~SKLearnProcessor~~ **ScriptProcessor**|Data splitting and preprocessing|
-|TrainModel|**TrainingStep**|**Estimator**|A *XGBoost* **Estimator** fitting|
-|TuneHyperparameters|**TunerStep**|**HyperparameterTuner**|Hyperparameter tuning|
-|EvaluateModel|**ProcessingStep**|**ScriptProcessor**|The fitted **Estimator** evaluation saved in a *JSON* **PropertyFile**|
-|CheckCondition|**ConditionStep**| |A target metric checking to conditionally perform subsequent steps|
-|Re-preprocessData|**ProcessingStep**|~~SKLearnProcessor~~ **ScriptProcessor**|Data repreprocessing|
-|Re-trainModel|**TrainingStep**|**Estimator**|A *XGBoost* **Estimator** refitting|
-|RegisterModel|**RegisterModel**| |Model packing and registration in a *ModelPackageGroup* with **ModelMetrics**|
-|DeployModel|**CreateModel**| |Model deployment|
-|PredictData|**TransformStep**|**Transformer**|Batch transformation|
+### Setup Guide
+1. A custom image must be created to use `scikit-learn` version 0.24 and `category_encoders` library. To build the image with the pre-made `Dockerfile` and push it to Amazon ECR, you need to run a shell script called `containers/run.sh`.
+2. Next, set the following policy in the created ECR repository.
+  ```json
+     {
+      "Version": "2008-10-17",
+      "Statement": [
+        {
+          "Sid": "<Your Statement>",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "sagemaker.amazonaws.com"
+          },
+          "Action": [
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:BatchGetImage",
+            "ecr:GetDownloadUrlForLayer"
+          ]
+        }
+      ]
+    }
+  ```
+3. Execute `conf/prerequisite.py` to upload the local data set files downloaded from Kaggle and the source code needed to build and deploy the project to the S3 bucket.
+4. Create a stack with the `cfn/sagemaker-project.yml` cloud formation template to provision the necessary resources. At this time, you need to enter the SageMaker project ID and name, and the name of the bucket where you uploaded the source code in the previous step as parameters.
+5. In order for the production endpoint to be deployed, it is necessary to approve the model in the model registry, see the test results for staging, and approve the subsequent progress. When the production endpoint deployment is complete, you can run `test/test.py` to see if the predicted values are coming out normally.
+
+### Workflow 
+|               Name               |               Step               |             Base Job Class              |                                   Description                                   |
+|:--------------------------------:|:--------------------------------:|:---------------------------------------:|:-------------------------------------------------------------------------------:|
+|          PreprocessData          |        **ProcessingStep**        |           **ScriptProcessor**           |                        Data splitting and preprocessing                         |
+| TrainModel (TuneHyperparameters) | **TrainingStep** (**TunerStep**) | **Estimator** (**HyperparameterTuner**) |            A *XGBoost* **Estimator** fitting (Hyperparameter tuning)            |
+|          EvaluateModel           |        **ProcessingStep**        |           **ScriptProcessor**           | The **Estimator** evaluation and saving the result to a *JSON* **PropertyFile** |
+|          CheckCondition          |        **ConditionStep**         |                                         |       A target metric checking to conditionally perform subsequent steps        |
+|        Re-preprocessData         |        **ProcessingStep**        |           **ScriptProcessor**           |                              Data repreprocessing                               |
+|          Re-trainModel           |         **TrainingStep**         |              **Estimator**              |                       A *XGBoost* **Estimator** refitting                       |
+ |   SKLearn, XGBoost RepackModel   |                                  |                                         |  A **PipelineModel** Creation with SKLearn preprocessor and XGBoost classifier  |
+|          RegisterModel           |        **RegisterModel**         |                                         |  Model packing and registration in a *ModelPackageGroup* with **ModelMetrics**  |
 
 ![Pipeline DAG](img/dag.png)
-
-* References:   
-  [XGBoost Algorithm](https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost.html)  
-  [Use XGBoost with the SageMaker Python SDK](https://sagemaker.readthedocs.io/en/stable/frameworks/xgboost/using_xgboost.html)  
-  [Perform Automatic Model Tuning with SageMaker](https://docs.aws.amazon.com/sagemaker/latest/dg/automatic-model-tuning.html)  
-  [HyperparameterTuner](https://sagemaker.readthedocs.io/en/stable/api/training/tuner.html)  
-  [Analyze Results of a Hyperparameter Tuning Job](https://github.com/aws/amazon-sagemaker-examples/blob/master/hyperparameter_tuning/analyze_results/HPO_Analyze_TuningJob_Results.ipynb)
-  [Amazon SageMaker Model Building Pipelines](https://docs.aws.amazon.com/sagemaker/latest/dg/pipelines.html)   
-  [SageMaker Pipelines](https://sagemaker.readthedocs.io/en/stable/workflows/pipelines/sagemaker.workflow.pipelines.html)  
-  [Orchestrating Jobs with Amazon SageMaker Model Building Pipelines](https://github.com/aws/amazon-sagemaker-examples/blob/master/sagemaker-pipelines/tabular/abalone_build_train_deploy/sagemaker-pipelines-preprocess-train-evaluate-batch-transform.ipynb)  
-  [Prebuilt Amazon SageMaker Docker Images for Scikit-Learn and Spark ML](https://docs.aws.amazon.com/sagemaker/latest/dg/pre-built-docker-containers-scikit-learn-spark.html)  
-  [Extend a Prebuilt Container](https://docs.aws.amazon.com/sagemaker/latest/dg/prebuilt-containers-extend.html)   
