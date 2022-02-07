@@ -13,7 +13,7 @@
 The features have been properly preprocessed. In particular, since *[XGBoost](https://arxiv.org/pdf/1603.02754.pdf)* does not have the ability to directly process categorical features, they were quantified using *[Target Encoding](https://dl.acm.org/doi/10.1145/507533.507538)* of `category_encoders`.
   
 ### Hyperparameter Tuning
-First, **Estimator** was defined as SageMaker's **XGBoost framework**. The optimal hyperparameter values were then efficiently obtained by fitting a **HyperparameterTuner** that automatically initiates a *Bayesian search*. Here is the convergence plot and the search results for each parameter.
+First, **Estimator** was defined as SageMaker's **XGBoost framework**. The optimal hyperparameter values were then efficiently obtained by fitting a **HyperparameterTuner** that automatically initiates a *[Bayesian search](https://proceedings.neurips.cc/paper/2012/file/05311655a15b75fab86956663e1819cd-Paper.pdf)*. Here is the convergence plot and the search results for each parameter.
 
 ![Convergence Plot](img/convergence_plot.svg)
 
@@ -41,7 +41,7 @@ Finally, after retraining the model by combining the training and test sets, unl
 
 ## SageMaker Pipelines
 ### Setup Guide
-1. A custom image must be created to use `scikit-learn` version 0.24 and `category_encoders` library. To build the image with the pre-made `Dockerfile` and push it to Amazon ECR, you need to run a shell script called `containers/run.sh`.
+1. A custom image must be created to use `scikit-learn` version 0.24 and `category_encoders` library. To build the image with the pre-made `Dockerfile` and push it to Amazon ECR, you need to run a shell script called `containers\run.sh`.
 2. Next, set the following policy in the created ECR repository.
   ```json
      {
@@ -62,11 +62,13 @@ Finally, after retraining the model by combining the training and test sets, unl
       ]
     }
   ```
-3. Execute `conf/prerequisite.py` to upload the local data set files downloaded from Kaggle and the source code needed to build and deploy the project to the S3 bucket.
-4. Create a stack with the `cfn/sagemaker-project.yml` cloud formation template to provision the necessary resources. At this time, you need to enter the SageMaker project ID and name, and the name of the bucket where you uploaded the source code in the previous step as parameters.
-5. In order for the production endpoint to be deployed, it is necessary to approve the model in the model registry, see the test results for staging, and approve the subsequent progress. When the production endpoint deployment is complete, you can run `test/test.py` to see if the predicted values are coming out normally.
+3. Execute `conf\prerequisite.py` to upload the local data set files downloaded from Kaggle and the source code needed to build and deploy the project to the S3 bucket.
+4. Create a stack with the `cfn\sagemaker-project.yml` cloud formation template to provision the necessary resources. At this time, you need to enter the SageMaker project ID and name, and the name of the bucket where you uploaded the source code in the previous step as parameters.
+5. In order for the production endpoint to be deployed, it is necessary to approve the model in the model registry, see the test results for staging, and approve the subsequent progress. When the production endpoint deployment is complete, you can run `test\test.py` to see if the predicted values are coming out normally.
 
 ### Workflow 
+![SageMaker Pipelines Architecture](img/SageMaker-Pipelines-Architecture.jpg)
+
 |               Name               |               Step               |             Base Job Class              |                                   Description                                   |
 |:--------------------------------:|:--------------------------------:|:---------------------------------------:|:-------------------------------------------------------------------------------:|
 |          PreprocessData          |        **ProcessingStep**        |           **ScriptProcessor**           |                        Data splitting and preprocessing                         |
@@ -75,7 +77,7 @@ Finally, after retraining the model by combining the training and test sets, unl
 |          CheckCondition          |        **ConditionStep**         |                                         |       A target metric checking to conditionally perform subsequent steps        |
 |        Re-preprocessData         |        **ProcessingStep**        |           **ScriptProcessor**           |                              Data repreprocessing                               |
 |          Re-trainModel           |         **TrainingStep**         |              **Estimator**              |                       A *XGBoost* **Estimator** refitting                       |
- |   SKLearn, XGBoost RepackModel   |                                  |                                         |  A **PipelineModel** Creation with SKLearn preprocessor and XGBoost classifier  |
+ |   SKLearn, XGBoost RepackModel   |                                  |                                         |  A **PipelineModel** creation with SKLearn preprocessor and XGBoost classifier  |
 |          RegisterModel           |        **RegisterModel**         |                                         |  Model packing and registration in a *ModelPackageGroup* with **ModelMetrics**  |
 
 ![Pipeline DAG](img/dag.png)

@@ -11,7 +11,7 @@ You own this code and you can modify this template to change as you need it, add
 A description of some of the artifacts is provided below:
 
 
-## Layout of the SageMaker ModelBuild Project Template
+## Layout of the SageMaker ModelDeploy Project Template
 
 `buildspec.yml`
  - this file is used by the CodePipeline's Build stage to build a CloudFormation template.
