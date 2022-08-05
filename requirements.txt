@@ -1,5 +1,5 @@
 awscli==1.19.67
-category_encoders=2.2.2
+category_encoders==2.2.2
 geckodriver==0.26.0
 selenium==3.141.0
 sagemaker-inference-toolkit==1.5.9

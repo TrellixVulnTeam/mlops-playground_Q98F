@@ -31,7 +31,12 @@ if __name__ == "__main__":
     except ClientError:
         _ = s3_client.create_bucket(Bucket=default_bucket)
 
-    file_names = ["train_identity.csv", "train_transaction.csv", "test_identity.csv", "test_transaction.csv"]
+    file_names = [
+        "train_identity.csv",
+        "train_transaction.csv",
+        "test_identity.csv",
+        "test_transaction.csv",
+    ]
     prefixes = ["training"] * 2 + ["prediction"] * 2
 
     for file_name, prefix in zip(file_names, prefixes):
